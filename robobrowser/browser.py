@@ -42,16 +42,28 @@ class RoboState(object):
 
 
 class RoboBrowser(object):
-    """Robotic web browser. Represents HTTP requests and responses using the
+    """
+    Robotic web browser. Represents HTTP requests and responses using the
     requests library and parsed HTML using BeautifulSoup.
 
-    :param str parser: HTML parser; used by BeautifulSoup
+    Attributes
+    ----------
+    session : requests.Session
+    parser : string
+        HTML parser; used by BeautifulSoup
+    timeout
+    allow_redirects : bool
+        Allow redirects on POST/PUT/DELETE
+    history
+
+
+    :param str parser: 
     :param str user_agent: Default user-agent
     :param history: History length; infinite if True, 1 if falsy, else
         takes integer value
 
     :param int timeout: Default timeout, in seconds
-    :param bool allow_redirects: Allow redirects on POST/PUT/DELETE
+    :param bool allow_redirects: 
 
     :param bool cache: Cache responses
     :param list cache_patterns: List of URL patterns for cache
@@ -64,10 +76,17 @@ class RoboBrowser(object):
     :param int multiplier: Delay multiplier between retries
 
     """
-    def __init__(self, session=None, parser=None, user_agent=None,
+    def __init__(self, session=None, parser="lxml", user_agent=None,
                  history=True, timeout=None, allow_redirects=True, cache=False,
                  cache_patterns=None, max_age=None, max_count=None, tries=None,
                  multiplier=None):
+                     
+        """
+        Parameters
+        ----------
+        session : requests.Session
+        parser : 
+        """
 
         self.session = session or requests.Session()
 
@@ -282,7 +301,8 @@ class RoboBrowser(object):
         )
 
     def get_form(self, id=None, *args, **kwargs):
-        """Find form by ID, as well as standard BeautifulSoup arguments.
+        """
+        Find form by ID, as well as standard BeautifulSoup arguments.
 
         :param str id: Form ID
         :return: BeautifulSoup tag if found, else None

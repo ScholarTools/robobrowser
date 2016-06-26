@@ -16,8 +16,11 @@ class BaseField(six.with_metaclass(abc.ABCMeta, object)):
     :param parsed: String or BeautifulSoup tag
     """
     def __init__(self, parsed):
+        #Yikes, we're redefining the parser here
+        #And why would we not have a parsed input here?
         self._parsed = helpers.ensure_soup(parsed, parser='html.parser')
         self._value = None
+        self.is_hidden = False
         self.name = self._get_name(self._parsed)
 
     @property
@@ -50,6 +53,9 @@ class Input(BaseField):
 
     def __init__(self, parsed):
         super(Input, self).__init__(parsed)
+
+        self.is_hidden = self._parsed['type'] == 'hidden'
+        
         self.value = self._parsed.get('value')
 
 

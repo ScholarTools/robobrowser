@@ -2,12 +2,21 @@
 HTML forms.
 """
 
+#Standard
 import re
 import collections
+
+
+#Third Party
 from werkzeug.datastructures import OrderedMultiDict
 
-from robobrowser.compat import iteritems, encode_if_py2
 
+#Local
+
+
+from ..compat import iteritems, encode_if_py2
+from ..tabulate import tabulate
+from .. import utils
 from . import fields
 from .. import helpers
 from .. import exceptions
@@ -149,6 +158,9 @@ class Payload(object):
 
 
 def prepare_fields(all_fields, submit_fields, submit):
+    """
+    TODO: What is this doing?????
+    """
     if len(list(submit_fields.items(multi=True))) > 1:
         if not submit:
             raise exceptions.InvalidSubmitError()
@@ -165,9 +177,12 @@ class Form(object):
     """Representation of an HTML form."""
 
     def __init__(self, parsed):
+
+        #TODO: This should be an error, create static method from_page
         parsed = helpers.ensure_soup(parsed)
         if parsed.name != 'form':
             parsed = parsed.find('form')
+            
         self.parsed = parsed
         self.action = self.parsed.get('action')
         self.method = self.parsed.get('method', 'get')
@@ -183,12 +198,12 @@ class Form(object):
 
         """
         if not isinstance(field, fields.BaseField):
-            raise ValueError('Argument "field" must be an instance of '
-                             'BaseField')
+            raise ValueError('Argument "field" must be an instance of BaseField')
         self.fields.add(field.name, field)
 
     @property
     def submit_fields(self):
+        #TODO: This will need to be changed
         return _filter_fields(
             self.fields,
             lambda field: isinstance(field, fields.Submit)
@@ -196,15 +211,69 @@ class Form(object):
 
     @encode_if_py2
     def __repr__(self):
-        state = u', '.join(
-            [
-                u'{0}={1}'.format(name, field.value)
-                for name, field in self.fields.items(multi=True)
-            ]
-        )
-        if state:
-            return u'<RoboForm {0}>'.format(state)
-        return u'<RoboForm>'
+        return self.get_pprint_str()
+
+
+    def get_pprint_str(self,show_hidden=False):
+         #Relevant Properties
+        #- method (DONE)
+        #- action (DONE)        
+        
+        MAX_VALUE_LENGTH = 10
+        MAX_OPTION_LENGTH = 20
+
+        str = u''
+        str += 'Form Object:\n'
+        #str += '%s\n' % utils.get_opening_tag_text(self.parsed)        
+        
+        #TODO: We need to support this
+        #str += ' .submit_info: %s\n' %self.submit_info.get_submit_summary_string()
+        str += '      .action: "%s"\n' % self.action
+        str += '      .method: %s\n' % self.method
+        str += '   \n'
+        
+        #Display of the tag values
+        #Let's get:
+        #type , name, value, options
+        n_hidden = 0
+        rows = []
+        for key in self.fields:
+            obj = self.fields[key]
+            #TODO: Move to code which displays whether or not we want to display
+            #the code
+            #Filters:
+            #- submittable - no
+            show_field = True
+            #if obj.is_submit_option:
+            #    show_field = False
+            
+            
+            if obj.is_hidden:
+                n_hidden += 1
+                show_field = show_hidden
+            elif obj.name is None:
+                show_field = False
+                
+                
+            if show_field:            
+                temp_value = obj.value.__repr__()
+                if len(temp_value) > MAX_VALUE_LENGTH:
+                    temp_value = temp_value[:MAX_VALUE_LENGTH-3] + '...'
+                
+                #option_str = obj.options_display_str            
+                #if len(temp_value) > MAX_OPTION_LENGTH:
+                #    option_str = option_str[:MAX_OPTION_LENGTH-3] + '...'            
+                
+                rows.append([obj.tag_type_str, obj.name, obj.label, temp_value])
+        
+        if len(rows) > 0:        
+            str += tabulate(rows,headers=['Tag Type','Name','Label','Value'],tablefmt="pipe")
+        elif n_hidden > 0:
+            str += '    Only hidden fields present in the form\n'
+        else:
+            str += '    No fields present in the form\n'
+
+        return str
 
     def keys(self):
         return self.fields.keys()
