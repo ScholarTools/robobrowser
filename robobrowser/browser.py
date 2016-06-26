@@ -32,13 +32,14 @@ class RoboState(object):
 
     @cached_property
     def parsed(self):
-        """Lazily parse response content, using HTML parser specified by the
+        """
+        Lazily parse response content, using HTML parser specified by the
         browser.
         """
         return BeautifulSoup(
             self.response.content,
             features=self.browser.parser,
-        )
+            from_encoding=self.response.encoding)
 
 
 class RoboBrowser(object):
