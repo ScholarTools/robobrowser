@@ -342,11 +342,19 @@ class Form(object):
         #- action (DONE)        
         
         MAX_VALUE_LENGTH = 10
+        MAX_LABEL_LENGTH = 20
         MAX_OPTION_LENGTH = 20
 
         str = u''
         str += 'Form Object:\n'    
-        str += '   .submit_info: %s\n' %self.submit_info.get_submit_summary_string()
+        
+        if self.submit_info.submit_selected:
+            ready_string = 'ready'
+            str += '   .submit_info: %s\n' %self.submit_info.get_submit_summary_string()
+        else:
+            ready_string = 'not ready'
+        
+        str += '   .submit_info: %s, # of options = %d\n' % (ready_string,self.submit_info.n_options)       
         str += '        .action: "%s"\n' % self.action
         str += '        .method: %s\n' % self.method
         str += '   \n'
@@ -373,14 +381,24 @@ class Form(object):
                 
             if show_field:            
                 temp_value = obj.value.__repr__()
+                #TODO: Replace newlines in value as well
                 if len(temp_value) > MAX_VALUE_LENGTH:
                     temp_value = temp_value[:MAX_VALUE_LENGTH-3] + '...'
                 
                 #option_str = obj.options_display_str            
                 #if len(temp_value) > MAX_OPTION_LENGTH:
-                #    option_str = option_str[:MAX_OPTION_LENGTH-3] + '...'            
+                #    option_str = option_str[:MAX_OPTION_LENGTH-3] + '...'   
                 
-                rows.append([obj.tag_type_str, obj.name, obj.label, temp_value])
+                temp_label = obj.label
+                
+                #The label may have newlines, but we'll display
+                #them as \n, but as an actual line break
+                temp_label = temp_label.replace('\n','\\n')                
+                
+                if len(temp_label) > MAX_LABEL_LENGTH:
+                    temp_label = temp_label[:MAX_LABEL_LENGTH-3] + '...'
+                
+                rows.append([obj.tag_type_str, obj.name, temp_label, temp_value])
         
         if len(rows) > 0:        
             str += tabulate(rows,headers=['Tag Type','Name','Label','Value'],tablefmt="pipe")
@@ -526,6 +544,10 @@ class Form(object):
         
         return results
     
+    def select_submit_via_value_attribute(self,value_attribute):
+        #TODO: Rename this function in submit_info
+        self.submit_info.submit_via_value_attribute(value_attribute)
+    
     @property
     def method(self):
         """
@@ -581,14 +603,29 @@ class Form(object):
         dict : Contains an entry for the next request        
         
         """
+        #TODO: Check that submit option is available
 
         if submit is not None:
             raise Exception("not yet coded")
+        
+        submit_field = self.submit_info.submit_via
         
         temp = []
         for x in self.field_objects:
             if x.include_in_request:
                 temp.extend(x.get_final_values())
+            elif x is submit_field:
+                #TODO: If the user ever set the submit info with a user created tag
+                #then this wouldn't trigger, and the order might not be correct
+                name = x.tag.get('name')
+                value = x.tag.get('value')
+                if name is not None:
+                    if value is None:
+                        value = ''
+                        
+                    temp.extend([(name,value)])
+
+                        
          
         payload = {}    
         if self.method.lower() == 'get':
@@ -615,7 +652,7 @@ class SubmitInfo(object):
     
     """    
 
-    
+    MAX_TAG_DISPLAY_LENGTH = 50
 
     def __init__(self,field_objects):
         
@@ -626,22 +663,39 @@ class SubmitInfo(object):
         else:
             self._submit_via = None
      
-    #TODO: Rename this ...       
+          
     @property
-    def is_submit_option(self):
+    def n_options(self):
+        return len(self.submit_options)          
+          
+    @property
+    def submit_selected(self):
         return self._submit_via is not None
         
     def get_submit_summary_string(self):
-        if self.is_submit_option:
-            return utils.get_opening_tag_text(self._submit_via.tag)
+        if self.submit_selected:
+            temp = utils.get_opening_tag_text(self._submit_via.tag)
+            if len(temp) > self.MAX_TAG_DISPLAY_LENGTH:
+                temp = temp[:self.MAX_TAG_DISPLAY_LENGTH-3] + '...'
+            return temp
         else:
             if len(self.submit_options) == 0:
                 return "No submit options detected"
             else:
                 return "No submit option selected"
-         
+    
+    #TODO: Rename
+    #TODO: Implement gateway in parent
+    def submit_via_value_attribute(self,value):
+        for obj in self.submit_options:
+            if obj.tag.get('value') == value:
+                self._submit_via = obj
+                return
+                
+        raise Exception('Unable to find tag with matching value attribute')
+     
     @property
-    def submit_via(self,value):
+    def submit_via(self):
         return self._submit_via 
         
     @submit_via.setter 
@@ -682,20 +736,24 @@ class SubmitInfo(object):
             else:
                 selected = '[ ]'
                 
-            str += '    %s %d)  %s\n' % (selected, i, utils.get_opening_tag_text(obj.tag))
+            temp = utils.get_opening_tag_text(obj.tag)
+            if len(temp) > self.MAX_TAG_DISPLAY_LENGTH:
+                temp = temp[:self.MAX_TAG_DISPLAY_LENGTH-3] + '...'    
+                
+            str += '    %s %d)  %s\n' % (selected, i, temp)
         
         return str
         
     @property
     def action(self):
-        if self.is_submit_option:
+        if self.submit_selected:
             return self._submit_via.action
         else:
             return None
             
     @property
     def method(self):
-        if self.is_submit_option:
+        if self.submit_selected:
             return self._submit_via.method
         else:
             return None  

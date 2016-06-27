@@ -160,7 +160,7 @@ class RoboBrowser(object):
     #TODO: Insert selenium methods here as well
     #This can help with going back and forth ...
 
-    #TODO: Why are these properties????
+    
     def find_element_by_link_text(self,text):
         
         try:
@@ -168,6 +168,7 @@ class RoboBrowser(object):
         except AttributeError:
             raise exceptions.RoboError
 
+    #TODO: Why are these properties????
     @property
     def find(self):
         """

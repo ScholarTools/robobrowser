@@ -106,6 +106,7 @@ class Field(object):
                     objects.append(new_object)
                     tags_per_object.append(tag)
                 else:
+                    print(tag)
                     raise CodeError('Tag name not recognized: ' + tag_name)
 
             new_object.resolve_label()
@@ -206,7 +207,6 @@ class SimpleField(Field):
         self.tag = tag
         self.name = tag.get('name',None)
         self.is_hidden = False
-        self.include_in_request = True
         self.is_submit_option = False
         
         #This default indicates a non-specific text input. In other words, the 
@@ -247,7 +247,8 @@ class SimpleField(Field):
         if self.is_hidden:
             self.label = ''
         else:
-            self.label = resolve_label(self.tag)
+            #This could be an expensive call
+            self.label = resolve_label(self.tag).strip()
           
         #We'll add on a label attribute for finding ...   
         self.tag['label'] = self.label
@@ -271,6 +272,9 @@ class SubmitField(SimpleField):
     
     def __init__(self,tag):
         super(SubmitField, self).__init__(tag)
+        
+        #TODO: We need to allow including this when
+        #the field is being used to submit
         self.include_in_request = False
         self.is_submit_option = True
         self.options_display_str = ''
@@ -316,6 +320,7 @@ class Input(SimpleField):
     
     def __init__(self,tag):
         super(Input, self).__init__(tag)
+        self.include_in_request = True
 
     @staticmethod
     def create(tag):
@@ -352,6 +357,8 @@ class Input(SimpleField):
             return MonthInput(tag)
         elif tag_type == 'range':
             return RangeInput(tag)
+        elif tag_type == 'reset':
+            return ResetInput(tag)
         elif tag_type == 'search':
             return SearchInput(tag)
         elif tag_type == 'tel':
@@ -363,6 +370,7 @@ class Input(SimpleField):
         elif tag_type == 'week':
             return WeekInput(tag)
         else:
+            print(tag)
             raise CodeError('Tag type not recognized')
 
 class Button(SubmitField):
@@ -465,6 +473,10 @@ class CheckboxInputGroup(Field):
                 str += '... and more ...\n'
         
         return str
+
+    @property
+    def include_in_request(self):
+        return any([x.is_checked for x in self.objects])
 
     @property
     def value(self):
@@ -692,6 +704,10 @@ class RadioInputGroup(Field):
                 str += '... and more ...\n'
                 
         return str
+        
+    @property
+    def include_in_request(self):
+        return any([x.is_selected for x in self.objects])
 
     def get_final_values(self):
         #TODO: This could presumably be optimized given that only
@@ -763,6 +779,9 @@ class ResetInput(Input):
     
     def __init__(self,tag):
         super(self.__class__, self).__init__(tag)    
+        
+        #TODO: I'm not sure of what this behavior should be ..., do reset buttons get submitted?
+        self.include_in_request = False
 
 class SearchInput(Input):
     
@@ -786,7 +805,10 @@ class Select(SimpleField):
     2) If no name is present for select, then it is not submitted.
         This may be a general rule ...
     3) If no value is present for an option, then the text is used
-        <option label="saab">My Saab</option>  => 'My Saab' is the 'value'    
+        <option label="saab">My Saab</option>  => 'My Saab' is the 'value'  
+        
+    TODO: support required attribute - this would involve also
+    checking whether or not each elememt of the form is ready to submit
    
     
     HTML Example
@@ -806,7 +828,9 @@ class Select(SimpleField):
     def __init__(self,tag):
         super(self.__class__, self).__init__(tag)
         self.allow_multiple = self.tag.get('multiple',None) is not None
+        
         option_tags = tag.find_all('option')
+        self.option_tags = option_tags
         if len(option_tags) == 0:
             self._value = None
             self.value_options = []
@@ -818,23 +842,49 @@ class Select(SimpleField):
             #TODO: Do we want to deblank?
             self.text_options = [x.text for x in option_tags]
             #This implements using text if the value attribute is missing
-            #TODO: What if the value attribute is empty?
+            #TODO: What if the value attribute is empty but present?
             self.value_options = [x if y is None else y for x,y in zip(self.text_options,temp_values)]
                     
-            self._value = [value for value,option_tag in zip(self.value_options,option_tags) if option_tag.get('selected',None) is not None]      
+            self._value = [value for value,option_tag in zip(self.value_options,option_tags) if option_tag.get('selected') is not None]      
     
         self.options_display_str = self.value_options.__repr__()   
         
     @property
     def value(self):
         #TODO: This needs to be changed ...
-        self._value
+        #Need to change selected and not selected
+        return self._value
 
     @value.setter
     def value(self,value):
         #TODO: We need to check if this is ok ...
         #We can also allow setting based on the label or text ...
         self._value = value
+
+
+    def get_final_values(self):
+        all_values = []
+        for obj,value in zip(self.option_tags,self.value_options):
+            if obj.get('selected') is not None:
+                all_values += [(self.name, value)]
+        return all_values
+
+    @property
+    def include_in_request(self):
+        return any([x.get('selected') is not None for x in self.option_tags])
+
+    #TODO: Improve display, show options, if there are relatively few
+    @encode_if_py2
+    def __repr__(self):
+        str = u''
+        str += '              tag : <bs4 tag>\n'
+        str += '              name: %s\n' % self.name
+        str += '         is_hidden: %s\n' % self.is_hidden
+        str += 'include_in_request: %s\n' % self.include_in_request
+        str += '  is_submit_option: %s\n' % self.is_submit_option
+        str += '             label: %s\n' % self.label
+        str += '    allow_multiple: %s\n' % self.allow_multiple    
+
 
 class SubmitInput(SubmitField):
     
@@ -868,6 +918,7 @@ class TextArea(SimpleField):
         super(self.__class__, self).__init__(tag)
         #Carp had: self.value = self._parsed.text.rstrip('\r').rstrip('\n')
         self._value = self.tag.text
+        self.include_in_request = True
 
 
     @property
