@@ -157,9 +157,27 @@ class RoboBrowser(object):
     def parsed(self):
         return self.state.parsed
 
+    #TODO: Insert selenium methods here as well
+    #This can help with going back and forth ...
+
+    #TODO: Why are these properties????
+    def find_element_by_link_text(self,text):
+        
+        try:
+            return self.parsed.find('a',href=True,text=text)
+        except AttributeError:
+            raise exceptions.RoboError
+
     @property
     def find(self):
-        """See ``BeautifulSoup::find``."""
+        """
+        See ``BeautifulSoup::find``.
+
+        https://www.crummy.com/software/BeautifulSoup/bs4/doc/#find    
+        
+        
+            
+        """
         try:
             return self.parsed.find
         except AttributeError:
@@ -175,7 +193,12 @@ class RoboBrowser(object):
 
     @property
     def select(self):
-        """See ``BeautifulSoup::select``."""
+        """
+        See ``BeautifulSoup::select``.
+
+        https://www.crummy.com/software/BeautifulSoup/bs4/doc/#css-selectors                
+        
+        """
         try:
             return self.parsed.select
         except AttributeError:

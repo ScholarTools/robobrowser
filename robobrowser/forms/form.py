@@ -669,6 +669,7 @@ class SubmitInfo(object):
         
     @encode_if_py2
     def __repr__(self):
+        #TODO: Truncate the display
         str = u''
         str += 'Submit Info Object:\n'
         str += '    .submit_via: %s\n' % self.get_submit_summary_string()

@@ -7,8 +7,7 @@ underlying bit of html code that specifies how the field should act.
 e.g. <input type="text" (html tag)  ==> TextInput (field class)
 """
 
-from .. import utils
-from ..compat import iteritems, encode_if_py2
+from ..compat import encode_if_py2
 
 class CodeError(Exception):
     """
@@ -21,13 +20,18 @@ class Field(object):
 
     """
     
-    #TODO: Force inheritance from here and use abstract properties
+    TODO: Force inheritance from here and use abstract properties
+    Everything currently inherits from this class, but I don't have
+    anything listed as being required 
+        
+    
     
     Required methods
     ----------------
-    get_final_values    
+    get_final_values : Returns a list of tuples of the form (name,value)
+        Importantly, this method checks if it should be returning values.
     
-    
+    #TODO: Move them up here
     Required properties are described in SimpleField.    
     
     See Also
@@ -69,9 +73,6 @@ class Field(object):
             
             if tag_type == 'input':
                 input_type = tag.get('type').lower()
-                #TODO: I am not thrilled with this approach
-                #Can submit via image as well, see:
-                #http://www.w3schools.com/tags/tryit.asp?filename=tryhtml_input_src
                 if input_type == 'radio':
                     radio_tags = Field._get_group_tags(tag,tags)
                     new_object = RadioInputGroup(radio_tags)

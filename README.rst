@@ -1,14 +1,8 @@
 RoboBrowser: Your friendly neighborhood web scraper
 ===============================================
 
-.. image:: https://badge.fury.io/py/robobrowser.png
-    :target: http://badge.fury.io/py/robobrowser
+#TODO: Documentation is out of date
 
-.. image:: https://travis-ci.org/jmcarp/robobrowser.png?branch=master
-        :target: https://travis-ci.org/jmcarp/robobrowser
-
-.. image:: https://coveralls.io/repos/jmcarp/robobrowser/badge.png?branch=master
-        :target: https://coveralls.io/r/jmcarp/robobrowser
 
 Homepage: `http://robobrowser.readthedocs.org/ <http://robobrowser.readthedocs.org/>`_
 
