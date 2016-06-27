@@ -188,10 +188,7 @@ class RoboBrowser(object):
         :return: Full URL
 
         """
-        return urlparse.urljoin(
-            self.url,
-            url
-        )
+        return urlparse.urljoin(self.url,url)
 
     @property
     def _default_send_args(self):
@@ -204,7 +201,8 @@ class RoboBrowser(object):
         }
 
     def _build_send_args(self, **kwargs):
-        """Merge optional arguments with defaults.
+        """
+        Merge optional arguments with defaults.
 
         :param kwargs: Keyword arguments to `Session::send`
 
@@ -215,7 +213,8 @@ class RoboBrowser(object):
         return out
 
     def open(self, url, method='get', **kwargs):
-        """Open a URL.
+        """
+        Open a URL.
 
         :param str url: URL to open
         :param str method: Optional method; defaults to `'get'`
@@ -357,8 +356,8 @@ class RoboBrowser(object):
 
         # Send request
         url = self._build_url(form.action) or self.url
-        payload = form.serialize(submit=submit)
-        serialized = payload.to_requests(method)
+        serialized = form.get_payload(submit=submit)
+        #serialized = payload.to_requests(method)
         send_args = self._build_send_args(**kwargs)
         send_args.update(serialized)
         response = self.session.request(method, url, **send_args)
