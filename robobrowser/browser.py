@@ -362,8 +362,8 @@ class RoboBrowser(object):
         try:
             href = link['href']
         except KeyError:
-            raise exceptions.RoboError('Link element must have "href" '
-                                       'attribute')
+            raise exceptions.RoboError('Link element must have "href" attribute')
+            
         self.open(self._build_url(href), **kwargs)
 
     def submit_form(self, form, submit=None, **kwargs):
@@ -388,3 +388,19 @@ class RoboBrowser(object):
 
         # Update history
         self._update_state(response)
+        
+    def download(self,link,save_path):
+        """
+        Download a file to disk
+        """        
+        try:
+            href = link['href']
+        except KeyError:
+            raise exceptions.RoboError('Link element must have "href" attribute')
+        
+        url = self._build_url(href)
+        
+        request = self.session.get(url, stream=True)
+        
+        with open(save_path, "wb") as file:
+            file.write(request.content)
